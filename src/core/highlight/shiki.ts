@@ -5,6 +5,7 @@ import {
 } from "shiki";
 import { shikiTheme } from "./codeTheme.js";
 let highlighter: Highlighter | null = null;
+let highlighterPromise: Promise<Highlighter> | null = null;
 
 export type Langs = Parameters<Highlighter["loadLanguage"]>[0];
 export const defaultLangs = {
@@ -22,11 +23,17 @@ export const defaultLangs = {
 
 export async function initShikiHighlighter() {
   if (highlighter) return highlighter;
-  const _highlighter = await createHighlighterCore({
+  
+  if (highlighterPromise) return highlighterPromise;
+  
+  highlighterPromise = createHighlighterCore({
     themes: [shikiTheme],
     langs: Object.values(defaultLangs),
     engine: createOnigurumaEngine(() => import("shiki/wasm")),
+  }).then((_highlighter) => {
+    highlighter = _highlighter as Highlighter;
+    return highlighter;
   });
-  highlighter = _highlighter as Highlighter;
-  return highlighter;
+  
+  return highlighterPromise;
 }

@@ -1,7 +1,7 @@
 import {
   type Highlighter,
   createHighlighterCore,
-  createOnigurumaEngine,
+  createJavaScriptRegexEngine,
 } from "shiki";
 import { shikiTheme } from "./codeTheme.js";
 let highlighter: Highlighter | null = null;
@@ -23,17 +23,17 @@ export const defaultLangs = {
 
 export async function initShikiHighlighter() {
   if (highlighter) return highlighter;
-  
+
   if (highlighterPromise) return highlighterPromise;
-  
+
   highlighterPromise = createHighlighterCore({
     themes: [shikiTheme],
     langs: Object.values(defaultLangs),
-    engine: createOnigurumaEngine(() => import("shiki/wasm")),
+    engine: createJavaScriptRegexEngine(),
   }).then((_highlighter) => {
     highlighter = _highlighter as Highlighter;
     return highlighter;
   });
-  
+
   return highlighterPromise;
 }

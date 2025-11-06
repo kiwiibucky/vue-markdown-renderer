@@ -1,4 +1,12 @@
-import { computed, defineComponent, h } from "vue";
+import {
+  computed,
+  defineComponent,
+  h,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  type ComponentPublicInstance,
+} from "vue";
 import { ShikiCachedRenderer } from "shiki-stream/vue";
 import { useShiki } from "./ShikiProvider.js";
 import { THEME } from "./highlight/codeTheme.js";
@@ -24,6 +32,46 @@ export const ShikiStreamCodeBlock = defineComponent({
     const themeStyle = computed(() => {
       const theme = proxyProps.theme;
       return THEME[theme];
+    });
+
+    // 延迟渲染：仅在进入视口后再进行代码高亮
+    const isInView = ref(false);
+    const observedEl = ref<HTMLElement | null>(null);
+    let io: IntersectionObserver | null = null;
+
+    onMounted(() => {
+      // 不支持 IntersectionObserver 时直接启用高亮
+      if (
+        typeof window === "undefined" ||
+        !("IntersectionObserver" in window)
+      ) {
+        isInView.value = true;
+        return;
+      }
+      io = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          if (entry && entry.isIntersecting) {
+            isInView.value = true;
+            if (observedEl.value) io?.unobserve(observedEl.value);
+            io?.disconnect();
+            io = null;
+          }
+        },
+        {
+          root: null,
+          // 预加载阈值，提前一点渲染，避免滚动到视口才闪烁
+          rootMargin: "100px 0px",
+          threshold: 0.01,
+        }
+      );
+      if (observedEl.value) io.observe(observedEl.value);
+    });
+
+    onBeforeUnmount(() => {
+      if (observedEl.value && io) io.unobserve(observedEl.value);
+      io?.disconnect();
+      io = null;
     });
 
     function getCodeMeta() {
@@ -94,6 +142,30 @@ export const ShikiStreamCodeBlock = defineComponent({
       if (!highlighter!.value) return null;
       const { highlightLang, language, code: codeChunk } = getCodeMeta();
       if (codeChunk === "") return null;
+
+      // 未进入视口：渲染纯文本以降低开销，并绑定观察
+      if (!isInView.value) {
+        const plainVnode = h(
+          "pre",
+          {
+            ref: (el: Element | ComponentPublicInstance | null) => {
+              observedEl.value = el as HTMLElement | null;
+              if (el && io) io.observe(el as HTMLElement);
+            },
+          },
+          [h("code", codeChunk)]
+        );
+
+        if (computedCodeBlockRenderer.value) {
+          return h(computedCodeBlockRenderer.value, {
+            highlightVnode: plainVnode,
+            language,
+          });
+        }
+        return plainVnode;
+      }
+
+      // 进入视口：渲染高亮
       const highlightVnode = h(ShikiCachedRenderer, {
         highlighter: highlighter!.value,
         code: codeChunk,

@@ -12,8 +12,7 @@ import remarkRehype from "remark-rehype";
 import remarkGfm, { Options as RemarkGfmOptions } from "remark-gfm";
 import { VFile } from "vfile";
 import { unified, type Plugin } from "unified";
-import { ShikiProvider } from "./ShikiProvider";
-import { Langs } from "./highlight/shiki";
+import rehypeHighlight from "rehype-highlight";
 import {
   remarkComponentCodeBlock,
   ComponentCodeBlock,
@@ -22,8 +21,8 @@ import {
   remarkEchartCodeBlock,
   EchartCodeBlock,
 } from "./plugin/remarkEchartCodeBlock.js";
-import { ShikiStreamCodeBlock } from "./ShikiStreamCodeBlock.js";
 import { provideProxyProps } from "./useProxyProps.js";
+import CodeBlock from "./CodeBlock";
 
 interface RemarkRehypeOptions {
   allowDangerousHtml?: boolean;
@@ -39,12 +38,6 @@ function jsx(type: any, props: Record<any, any>, key: any) {
   if (type === Fragment) {
     return h(type, props, children);
   } else if (typeof type !== "string") {
-    if (type === ShikiStreamCodeBlock) {
-      // 使用json字符串作为prop的目的是防止ShikiStreamCodeBlock组件不必要的re-render
-      const nodeJSON = JSON.stringify(props.node);
-      delete props.node;
-      return h(type, { ...props, nodeJSON });
-    }
     return h(type, props);
   }
   return h(type, props, children);
@@ -74,7 +67,7 @@ export default defineComponent({
       type: Object as PropType<Component>,
     },
     extraLangs: {
-      type: Array as PropType<Langs[]>,
+      type: Array as PropType<string[]>,
       default: () => [],
     },
     rehypePlugins: {
@@ -106,6 +99,7 @@ export default defineComponent({
         remarkRehypeOptions,
         remarkGfmOptions,
       } = props;
+
       const processor = unified()
         .use(remarkParse)
         .use(remarkGfm, remarkGfmOptions)
@@ -113,6 +107,13 @@ export default defineComponent({
         .use(remarkEchartCodeBlock)
         .use(remarkPlugins)
         .use(remarkRehype, remarkRehypeOptions)
+        .use(rehypeHighlight, {
+          detect: true,
+          ignoreMissing: true,
+          aliases: {
+            xml: "vue",
+          },
+        })
         .use(rehypePlugins);
       return processor;
     });
@@ -128,7 +129,7 @@ export default defineComponent({
         components: {
           ComponentCodeBlock,
           EchartCodeBlock,
-          pre: ShikiStreamCodeBlock,
+          pre: CodeBlock,
         },
         Fragment,
         jsx: jsx,
@@ -146,9 +147,7 @@ export default defineComponent({
     });
 
     return () => {
-      return h(ShikiProvider, null, {
-        default: () => computedVNode.value,
-      });
+      return computedVNode.value;
     };
   },
 });

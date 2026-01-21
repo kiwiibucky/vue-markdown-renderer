@@ -4,6 +4,7 @@ import {
   type PropType,
   computed,
   type Component,
+  type DefineComponent,
 } from "vue";
 import { Fragment } from "vue/jsx-runtime";
 import { toJsxRuntime } from "hast-util-to-jsx-runtime";
@@ -14,6 +15,7 @@ import { VFile } from "vfile";
 import { unified, type Plugin } from "unified";
 import rehypeHighlight from "rehype-highlight";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
+import type { Schema } from "hast-util-sanitize";
 import rehypeKatex from "rehype-katex";
 import rehypeExternalLinks from "rehype-external-links";
 import remarkMath from "remark-math";
@@ -48,7 +50,7 @@ function jsx(type: any, props: Record<any, any>, key: any) {
   return h(type, props, children);
 }
 
-export default defineComponent({
+const VueMarkdownRenderer = defineComponent({
   name: "VueMarkdownRenderer",
   props: {
     source: {
@@ -91,6 +93,10 @@ export default defineComponent({
       type: Object as PropType<RemarkGfmOptions>,
       default: () => ({}),
     },
+    rehypeSanitizeSchema: {
+      type: Object as PropType<Partial<Schema>>,
+      default: () => ({}),
+    },
   },
   errorCaptured(e) {
     console.error("VueMarkdownRenderer captured error", e);
@@ -103,6 +109,7 @@ export default defineComponent({
         remarkPlugins,
         remarkRehypeOptions,
         remarkGfmOptions,
+        rehypeSanitizeSchema,
       } = props;
 
       const processor = unified()
@@ -116,7 +123,12 @@ export default defineComponent({
         .use(rehypeRaw)
         .use(rehypeSanitize, {
           ...defaultSchema,
-          tagNames: [...(defaultSchema.tagNames || []), "input"],
+          ...rehypeSanitizeSchema,
+          tagNames: [
+            ...(defaultSchema.tagNames || []),
+            "input",
+            ...(rehypeSanitizeSchema?.tagNames || []),
+          ],
           attributes: {
             ...defaultSchema.attributes,
             input: [
@@ -125,6 +137,7 @@ export default defineComponent({
               ["checked"],
               ["disabled"],
             ],
+            ...rehypeSanitizeSchema?.attributes,
           },
         })
         .use(rehypeKatex, {
@@ -177,3 +190,18 @@ export default defineComponent({
     };
   },
 });
+
+export default VueMarkdownRenderer as DefineComponent<{
+  source: string;
+  theme: "light" | "dark";
+  componentsMap?: Record<string, Component>;
+  codeBlockRenderer?: Component;
+  echartRenderer?: Component;
+  echartRendererPlaceholder?: Component;
+  extraLangs?: string[];
+  rehypePlugins?: Plugin[];
+  remarkPlugins?: Plugin[];
+  remarkRehypeOptions?: RemarkRehypeOptions;
+  remarkGfmOptions?: RemarkGfmOptions;
+  rehypeSanitizeSchema?: Partial<Schema>;
+}>;

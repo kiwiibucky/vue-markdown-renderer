@@ -57,6 +57,9 @@ importers:
         specifier: ^3.2.0
         version: 3.5.17(typescript@5.8.3)
     devDependencies:
+      hast-util-sanitize:
+        specifier: ^5.0.2
+        version: 5.0.2
       prettier:
         specifier: ^3.5.2
         version: 3.6.2

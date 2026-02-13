@@ -1,12 +1,12 @@
 import {
   h,
+  Fragment,
   defineComponent,
   type PropType,
   computed,
   type Component,
   type DefineComponent,
 } from "vue";
-import { Fragment } from "vue/jsx-runtime";
 import { toJsxRuntime } from "hast-util-to-jsx-runtime";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";

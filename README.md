@@ -1,8 +1,13 @@
 # VueMarkdownRenderer
 
+> **Fork Notice**: This is a Vue 3.2+ compatible fork of [@superarale/vue-markdown-renderer](https://github.com/mahoushoujoarale/vue-markdown-renderer) by [linzhe](https://github.com/mahoushoujoarale). Main improvements:
+> - ✅ Compatible with Vue 3.2+ (original required Vue 3.3+)
+> - ✅ Removed `vue/jsx-runtime` dependency
+> - ✅ Uses `Fragment` from Vue core instead
+
 A Vue.js markdown component with enhanced features, utilizing efficient DOM rendering through Vue's virtual DOM.
 
-[live demo](https://linzhe141.github.io/vue-markdown-renderer/)
+**Original demo**: [live demo](https://linzhe141.github.io/vue-markdown-renderer/)
 
 ## Features
 
@@ -18,7 +23,11 @@ A Vue.js markdown component with enhanced features, utilizing efficient DOM rend
 ## Installation
 
 ```bash
-npm install vue-mdr
+npm install @kiwiibucky/vue-markdown-renderer
+# or
+pnpm add @kiwiibucky/vue-markdown-renderer
+# or
+yarn add @kiwiibucky/vue-markdown-renderer
 ```
 
 ## Usage
